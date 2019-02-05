@@ -17,22 +17,18 @@
 
 #include <switch.h>
 #include <functional>
-#include "../WebRequest.hpp"
+#include "../View.hpp"
 
 #pragma once
 
 namespace KUDiag {
-    class AppVersionView {
+    class AppVersionView : public View {
         public:
             AppVersionView(std::function<void()> backCallback);
-            ~AppVersionView();
 
-            void draw(u64 kDown);
-            void reset();
         private:
-            std::function<void()> _backCallback;
-            bool _hasDrawn;
-            bool _hasFinished;
-            WebRequest * _request;
+            std::string _getTitle();
+            std::string _getURL();
+            void _requestCompletedSuccessfully();
     }; 
 }

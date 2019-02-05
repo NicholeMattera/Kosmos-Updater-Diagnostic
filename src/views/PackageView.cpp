@@ -25,105 +25,38 @@ using namespace std;
 using namespace zipper;
 
 namespace KUDiag {
-    PackageView::PackageView(function<void()> backCallback) {
-        _backCallback = backCallback;
-        _hasDrawn = false;
-        _hasFinished = false;
-        _request = NULL;
+    PackageView::PackageView(std::function<void()> backCallback) : View(backCallback) {}
+
+    string PackageView::_getTitle() {
+        return string("Kosmos Updater Diagnostic ") + VERSION + " - Get latest package";
     }
 
-    PackageView::~PackageView() {
-        if (_request) {
-            delete _request;
-        }
+    string PackageView::_getURL() {
+        return string("http://kosmos-updater.teamatlasnx.com/") + API_VERSION + "/package?channel=" + _getChannel() + "&bundle=" + _getBundle();
     }
 
-    void PackageView::draw(u64 kDown) {
-        if (_hasFinished) {
-            if (kDown & KEY_A) {
-                _backCallback();
-                reset();
+    void PackageView::_requestCompletedSuccessfully() {
+        unsigned char * data = (unsigned char *) _request->getRawData();
+
+        vector<unsigned char> vectorData(data, data + _request->getSize());
+        Unzipper unzipper(vectorData);
+        vector<ZipEntry> entries = unzipper.entries();
+
+        cout << "\x1b[5;0HChannel: "  << _getChannel() << "\n";
+        cout << "Bundle: "  << _getBundle() << "\n";
+        cout << "Number of entries: "  << entries.size() << "\n\n";
+        cout << "First Ten Entries\n";
+
+        int i = 0;
+        for (auto const& entry : entries) {
+            if (!entry.name.empty()) {
+                cout << "Entry #" << i << ": " << entry.name << "\n";
+                i++;
             }
 
-            return;
-        }
-
-        if (_request) {
-            if (_request->isComplete()) {
-                if (_request->hasError()) {
-                    cout << "\x1b[3;0HError: " << _request->getErrorMessage() << "\n\n";
-                } else {
-                    cout << "\x1b[3;14H100";
-
-                    unsigned char * data = (unsigned char *) _request->getRawData();
-
-                    vector<unsigned char> vectorData(data, data + _request->getSize());
-                    Unzipper unzipper(vectorData);
-                    vector<ZipEntry> entries = unzipper.entries();
-
-                    cout << "\x1b[5;0HChannel: "  << _getChannel() << "\n";
-                    cout << "Bundle: "  << _getBundle() << "\n";
-                    cout << "Number of entries: "  << entries.size() << "\n\n";
-                    cout << "First Ten Entries\n";
-
-                    int i = 0;
-                    for (auto const& entry : entries) {
-                        if (!entry.name.empty()) {
-                            cout << "Entry #" << i << ": " << entry.name << "\n";
-                            i++;
-                        }
-
-                        if (i == 10) {
-                            break;
-                        }
-                    }
-                }
-
-                cout << "\nPress A to continue.";
-
-                _hasFinished = true;
-            } else {
-                Mutex mutext = _request->getMutex();
-                mutexLock(&mutext);
-                int progress = _request->getProgress();
-                mutexUnlock(&mutext);
-
-                if (progress < 10) {
-                    cout << "\x1b[3;16H" << progress;
-                } else if (progress < 100) {
-                    cout << "\x1b[3;15H" << progress;
-                } else {
-                    cout << "\x1b[3;14H" << progress;
-                }
+            if (i == 10) {
+                break;
             }
-        }
-
-        if (!_hasDrawn) {
-            consoleClear();
-
-            cout << "\x1b[0;0HKosmos Updater Diagnostic " << VERSION << " - Get latest package\n\n";
-            cout << "Downloading:   0%";
-
-            _request = new WebRequest("GET", string("http://kosmos-updater.teamatlasnx.com/") + API_VERSION + "/package?channel=" + _getChannel() + "&bundle=" + _getBundle());
-            if (!_request->start()) {
-                cout << "\x1b[1;12H100";
-                cout << "\x1b[3;0HError: Problem starting thread.\n\n";
-                cout << "Press A to continue.";
-
-                _hasFinished = true;
-            }
-
-            _hasDrawn = true;
-        }
-    }
-
-    void PackageView::reset() {
-        _hasDrawn = false;
-        _hasFinished = false;
-        
-        if (_request != NULL) {
-            delete _request;
-            _request = NULL;
         }
     }
 

@@ -22,85 +22,19 @@
 using namespace std;
 
 namespace KUDiag {
-    PackageVersionView::PackageVersionView(function<void()> backCallback) {
-        _backCallback = backCallback;
-        _hasDrawn = false;
-        _hasFinished = false;
-        _request = NULL;
+    PackageVersionView::PackageVersionView(std::function<void()> backCallback) : View(backCallback) {}
+
+    string PackageVersionView::_getTitle() {
+        return string("Kosmos Updater Diagnostic ") + VERSION + " - Get latest package version";
     }
 
-    PackageVersionView::~PackageVersionView() {
-        if (_request) {
-            delete _request;
-        }
+    string PackageVersionView::_getURL() {
+        return string("http://kosmos-updater.teamatlasnx.com/") + API_VERSION + "/package/version-number?channel=" + _getChannel();
     }
 
-    void PackageVersionView::draw(u64 kDown) {
-        if (_hasFinished) {
-            if (kDown & KEY_A) {
-                _backCallback();
-                reset();
-            }
-
-            return;
-        }
-
-        if (_request) {
-            if (_request->isComplete()) {
-                if (_request->hasError()) {
-                    cout << "\x1b[3;0HError: " << _request->getErrorMessage() << "\n\n";
-                } else {
-                    cout << "\x1b[3;14H100";
-                    cout << "\x1b[5;0HChannel: "  << _getChannel() << "\n";
-                    cout << "Latest Package Version: " << _request->getData() << "\n\n";
-                }
-
-                cout << "Press A to continue.";
-
-                _hasFinished = true;
-            } else {
-                Mutex mutext = _request->getMutex();
-                mutexLock(&mutext);
-                int progress = _request->getProgress();
-                mutexUnlock(&mutext);
-
-                if (progress < 10) {
-                    cout << "\x1b[3;16H" << progress;
-                } else if (progress < 100) {
-                    cout << "\x1b[3;15H" << progress;
-                } else {
-                    cout << "\x1b[3;14H" << progress;
-                }
-            }
-        }
-
-        if (!_hasDrawn) {
-            consoleClear();
-
-            cout << "\x1b[0;0HKosmos Updater Diagnostic " << VERSION << " - Get latest package version\n\n";
-            cout << "Downloading:   0%";
-
-            _request = new WebRequest("GET", string("http://kosmos-updater.teamatlasnx.com/") + API_VERSION + "/package/version-number?channel=" + _getChannel());
-            if (!_request->start()) {
-                cout << "\x1b[1;12H100";
-                cout << "\x1b[3;0HError: Problem starting thread.\n\n";
-                cout << "Press A to continue.";
-
-                _hasFinished = true;
-            }
-
-            _hasDrawn = true;
-        }
-    }
-
-    void PackageVersionView::reset() {
-        _hasDrawn = false;
-        _hasFinished = false;
-        
-        if (_request != NULL) {
-            delete _request;
-            _request = NULL;
-        }
+    void PackageVersionView::_requestCompletedSuccessfully() {
+        cout << "\x1b[5;0HChannel: "  << _getChannel() << "\n";
+        cout << "Latest Package Version: " << _request->getData() << "\n\n";
     }
 
     string PackageVersionView::_getChannel() {

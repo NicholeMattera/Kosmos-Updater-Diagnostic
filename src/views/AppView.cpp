@@ -23,88 +23,27 @@
 using namespace std;
 
 namespace KUDiag {
-    AppView::AppView(function<void()> backCallback) {
-        _backCallback = backCallback;
-        _hasDrawn = false;
-        _hasFinished = false;
-        _request = NULL;
+    AppView::AppView(std::function<void()> backCallback) : View(backCallback) {}
+
+    string AppView::_getTitle() {
+        return string("Kosmos Updater Diagnostic ") + VERSION + " - Get latest app";
     }
 
-    void AppView::draw(u64 kDown) {
-        if (_hasFinished) {
-            if (kDown & KEY_A) {
-                _backCallback();
-                reset();
-            }
-
-            return;
-        }
-
-        if (_request) {
-            if (_request->isComplete()) {
-                if (_request->hasError()) {
-                    cout << "\x1b[3;0HError: " << _request->getErrorMessage() << "\n\n";
-                } else {
-                    cout << "\x1b[3;14H100";
-
-                    NacpStruct nacp = _getNACP(_request->getRawData());
-                    NacpLanguageEntry * langEntry = NULL;
-                    Result rc = nacpGetLanguageEntry(&nacp, &langEntry);
-
-                    if (R_SUCCEEDED(rc) && langEntry != NULL) {
-                       cout << "\x1b[5;0HApp Name: " << langEntry->name << "\n";
-                       cout << "App Author: "  << langEntry->author << "\n";
-                       cout << "App Version: "  << nacp.version << "\n\n";
-                    } else {
-                        cout << "\x1b[5;0HApp Version: " << nacp.version << "\n\n";
-                    }
-                }
-
-                cout << "Press A to continue.";
-
-                _hasFinished = true;
-            } else {
-                Mutex mutext = _request->getMutex();
-                mutexLock(&mutext);
-                int progress = _request->getProgress();
-                mutexUnlock(&mutext);
-
-                if (progress < 10) {
-                    cout << "\x1b[3;16H" << progress;
-                } else if (progress < 100) {
-                    cout << "\x1b[3;15H" << progress;
-                } else {
-                    cout << "\x1b[3;14H" << progress;
-                }
-            }
-        }
-
-        if (!_hasDrawn) {
-            consoleClear();
-
-            cout << "\x1b[0;0HKosmos Updater Diagnostic " << VERSION << " - Get latest app\n\n";
-            cout << "Downloading:   0%";
-
-            _request = new WebRequest("GET", string("http://kosmos-updater.teamatlasnx.com/") + API_VERSION + "/app");
-            if (!_request->start()) {
-                cout << "\x1b[1;12H100";
-                cout << "\x1b[3;0HError: Problem starting thread.\n\n";
-                cout << "Press A to continue.";
-
-                _hasFinished = true;
-            }
-
-            _hasDrawn = true;
-        }
+    string AppView::_getURL() {
+        return string("http://kosmos-updater.teamatlasnx.com/") + API_VERSION + "/app";
     }
 
-    void AppView::reset() {
-        _hasDrawn = false;
-        _hasFinished = false;
-        
-        if (_request != NULL) {
-            delete _request;
-            _request = NULL;
+    void AppView::_requestCompletedSuccessfully() {
+        NacpStruct nacp = _getNACP(_request->getRawData());
+        NacpLanguageEntry * langEntry = NULL;
+        Result rc = nacpGetLanguageEntry(&nacp, &langEntry);
+
+        if (R_SUCCEEDED(rc) && langEntry != NULL) {
+            cout << "\x1b[5;0HApp Name: " << langEntry->name << "\n";
+            cout << "App Author: "  << langEntry->author << "\n";
+            cout << "App Version: "  << nacp.version << "\n\n";
+        } else {
+            cout << "\x1b[5;0HApp Version: " << nacp.version << "\n\n";
         }
     }
 

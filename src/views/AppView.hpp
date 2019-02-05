@@ -17,23 +17,19 @@
 
 #include <switch.h>
 #include <functional>
-#include "../WebRequest.hpp"
+#include "../View.hpp"
 
 #pragma once
 
 namespace KUDiag {
-    class AppView {
+    class AppView : public View {
         public:
             AppView(std::function<void()> backCallback);
 
-            void draw(u64 kDown);
-            void reset();
         private:
             NacpStruct _getNACP(char * data);
-
-            std::function<void()> _backCallback;
-            bool _hasDrawn;
-            bool _hasFinished;
-            WebRequest * _request;
+            std::string _getTitle();
+            std::string _getURL();
+            void _requestCompletedSuccessfully();
     }; 
 }

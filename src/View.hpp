@@ -15,24 +15,31 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#include "AppVersionView.hpp"
-#include <iostream>
-#include <string>
+#include <switch.h>
+#include <functional>
+#include "WebRequest.hpp"
 
-using namespace std;
+#pragma once
 
 namespace KUDiag {
-    AppVersionView::AppVersionView(std::function<void()> backCallback) : View(backCallback) {}
+    class View {
+        public:
+            View(std::function<void()> backCallback);
+            virtual ~View();
 
-    string AppVersionView::_getTitle() {
-        return string("Kosmos Updater Diagnostic ") + VERSION + " - Get latest app version";
-    }
+            void draw(u64 kDown);
+            void reset();
 
-    string AppVersionView::_getURL() {
-        return string("http://kosmos-updater.teamatlasnx.com/") + API_VERSION + "/app/version-number";
-    }
+        protected:
+            WebRequest * _request;
+        
+        private:
+            virtual std::string _getTitle();
+            virtual std::string _getURL();
+            virtual void _requestCompletedSuccessfully();
 
-    void AppVersionView::_requestCompletedSuccessfully() {
-        cout << "\x1b[5;0HLatest App Version: "  << _request->getData() << "\n\n";
-    }
+            std::function<void()> _backCallback;
+            bool _hasDrawn;
+            bool _hasFinished;
+    }; 
 }

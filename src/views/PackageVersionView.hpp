@@ -17,26 +17,20 @@
 
 #include <switch.h>
 #include <functional>
-#include "../WebRequest.hpp"
+#include "../View.hpp"
 
 #pragma once
 
 namespace KUDiag {
-    class PackageVersionView {
+    class PackageVersionView : public View {
         public:
             PackageVersionView(std::function<void()> backCallback);
-            ~PackageVersionView();
-
-            void draw(u64 kDown);
-            void reset();
 
             int channel;
         private:
             std::string _getChannel();
-
-            std::function<void()> _backCallback;
-            bool _hasDrawn;
-            bool _hasFinished;
-            WebRequest * _request;
+            std::string _getTitle();
+            std::string _getURL();
+            void _requestCompletedSuccessfully();
     }; 
 }
