@@ -172,6 +172,10 @@ namespace KUDiag {
         curl = curl_easy_init();
 
         if (curl) {
+            struct curl_slist * headers = NULL;
+            headers = curl_slist_append(headers, "Cache-Control: no-cache");
+
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             curl_easy_setopt(curl, CURLOPT_URL, request->getURL().c_str());
             curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, request->getMethod().c_str());
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _writeFunction);
@@ -185,12 +189,14 @@ namespace KUDiag {
             if (res != CURLE_OK) {
                 request->setErrored(string(curl_easy_strerror(res)));
                 curl_easy_cleanup(curl);
+                curl_slist_free_all(headers);
                 return;
             }
 
             long http_code = 0;
             curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
             curl_easy_cleanup(curl);
+            curl_slist_free_all(headers);
 
             if (http_code != 200) {
                 request->setErrored("There was an error on the server, please try again later.");
