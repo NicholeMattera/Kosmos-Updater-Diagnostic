@@ -24,7 +24,7 @@
 namespace KUDiag {
     class AppVersionView : public View {
         public:
-            AppVersionView(std::function<void()> backCallback);
+            AppVersionView(bool secure, bool async, std::function<void()> backCallback);
 
         private:
             std::string _getTitle();

@@ -24,7 +24,7 @@
 namespace KUDiag {
     class View {
         public:
-            View(std::function<void()> backCallback);
+            View(bool secure, bool async, std::function<void()> backCallback);
             virtual ~View();
 
             void draw(u64 kDown);
@@ -38,6 +38,8 @@ namespace KUDiag {
             virtual std::string _getURL();
             virtual void _requestCompletedSuccessfully();
 
+            bool _secure;
+            bool _async;
             std::function<void()> _backCallback;
             bool _hasDrawn;
             bool _hasFinished;

@@ -25,7 +25,9 @@ using namespace std;
 using namespace zipper;
 
 namespace KUDiag {
-    View::View(function<void()> backCallback) {
+    View::View(bool secure, bool async, function<void()> backCallback) {
+        _secure = secure;
+        _async = async;
         _backCallback = backCallback;
         _hasDrawn = false;
         _hasFinished = false;
@@ -48,7 +50,7 @@ namespace KUDiag {
             return;
         }
 
-        if (_request) {
+        if (_async && _request) {
             Mutex mutext = _request->getMutex();
             mutexLock(&mutext);
 
@@ -83,13 +85,24 @@ namespace KUDiag {
             consoleClear();
 
             cout << "\x1b[0;0H" << _getTitle() << "\n\n";
-            cout << "Downloading:   0%";
+            if (_async) {
+                cout << "Downloading:   0%";
+            }
 
-            _request = new WebRequest("GET", _getURL());
-            if (!_request->start()) {
+            _request = new WebRequest("GET", ((_secure) ? "https://" : "http://") + _getURL());
+            if (_async && !_request->startAsync()) {
                 cout << "\x1b[1;12H100";
                 cout << "\x1b[3;0HError: Problem starting thread.\n\n";
                 cout << "Press A to continue.";
+
+                _hasFinished = true;
+            }
+
+            if (!_async) {
+                _request->startSync();
+                _requestCompletedSuccessfully();
+
+                cout << "\nPress A to continue.";
 
                 _hasFinished = true;
             }

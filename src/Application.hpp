@@ -17,9 +17,6 @@
 
 #include "Menu.hpp"
 #include "views/AppVersionView.hpp"
-#include "views/AppView.hpp"
-#include "views/PackageVersionView.hpp"
-#include "views/PackageView.hpp"
 
 #pragma once
 
@@ -33,12 +30,10 @@ namespace KUDiag {
         private:
             int _state;
             Menu * _mainMenu;
-            Menu * _bundleMenu;
-            Menu * _channelMenu;
-            AppVersionView * _appVersionView;
-            AppView * _appView;
-            PackageVersionView * _packageVersionView;
-            PackageView * _packageView;
+            AppVersionView * _httpSyncAppVersionView;
+            AppVersionView * _httpAsyncAppVersionView;
+            AppVersionView * _httpsSyncAppVersionView;
+            AppVersionView * _httpsAsyncAppVersionView;
 
             void _menuItemSelected(int itemSelected);
             void _back();

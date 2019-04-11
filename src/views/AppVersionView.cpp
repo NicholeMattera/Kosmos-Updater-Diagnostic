@@ -22,14 +22,14 @@
 using namespace std;
 
 namespace KUDiag {
-    AppVersionView::AppVersionView(std::function<void()> backCallback) : View(backCallback) {}
+    AppVersionView::AppVersionView(bool secure, bool async, std::function<void()> backCallback) : View(secure, async, backCallback) {}
 
     string AppVersionView::_getTitle() {
         return string("Kosmos Updater Diagnostic ") + VERSION + " - Get latest app version";
     }
 
     string AppVersionView::_getURL() {
-        return string("http://kosmos-updater.teamatlasnx.com/") + API_VERSION + "/app/version-number";
+        return string("kosmos-updater.teamatlasnx.com/") + API_VERSION + "/app/version-number";
     }
 
     void AppVersionView::_requestCompletedSuccessfully() {

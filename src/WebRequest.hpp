@@ -35,33 +35,31 @@ namespace KUDiag {
             bool isComplete();
 
             size_t getSize();
-
             std::string getData();
-            char * getRawData();
             bool saveData(std::string filename);
             
             bool hasError();
             std::string getErrorMessage();
 
-            bool start();
+            std::string startSync();
+            bool startAsync();
 
-            size_t appendData(void *contents, size_t size, size_t nmemb);
+            size_t appendData(const char* in, std::size_t size, std::size_t num);
             int setProgress(curl_off_t dltotal, curl_off_t dlnow);
             void setCompleted();
             void setErrored(std::string message);
 
         private:
             static void _createRequest(void * ptr);
-            static size_t _writeFunction(void *contents, size_t size, size_t nmemb, void * ptr);
-            static size_t _progressFunction(void *ptr, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
+            static size_t _writeFunction(const char* in, std::size_t size, std::size_t num, WebRequest * request);
+            static size_t _progressFunction(WebRequest * request, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
 
             std::string _method;
             std::string _url;
-
-            size_t _size;
-            char * _data;
+            std::string _data;
 
             Thread _thread;
+            bool _threadCreated;
             Mutex _mutex;
             u8 _progress;
             bool _completed;

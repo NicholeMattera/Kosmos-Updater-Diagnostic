@@ -28,47 +28,23 @@ namespace KUDiag {
         curl_global_init(CURL_GLOBAL_ALL);
 
         vector<string> mainMenuItems;
-        mainMenuItems.push_back("Get latest app version");
-        mainMenuItems.push_back("Get latest app");
-        mainMenuItems.push_back("Get latest package version");
-        mainMenuItems.push_back("Get latest package");
+        mainMenuItems.push_back("Get latest app version (http - sync)");
+        mainMenuItems.push_back("Get latest app version (http - async)");
+        mainMenuItems.push_back("Get latest app version (https - sync)");
+        mainMenuItems.push_back("Get latest app version (https - async)");
         mainMenuItems.push_back("Exit");
 
         _mainMenu = new Menu(
-            string("Kosmos Updater Diagnostic ") + VERSION + " - Main Menu",
+            string("Kosmos Updater Diagnostic SSL Debug - Main Menu"),
             mainMenuItems,
             bind(&Application::_menuItemSelected, this, _1),
             bind(&Application::_back, this)
         );
 
-        vector<string> bundleItems;
-        bundleItems.push_back("Kosmos");
-        bundleItems.push_back("Atmosphere");
-        bundleItems.push_back("Back");
-
-        _bundleMenu = new Menu(
-            string("Kosmos Updater Diagnostic ") + VERSION + " - Select a bundle",
-            bundleItems,
-            bind(&Application::_menuItemSelected, this, _1),
-            bind(&Application::_back, this)
-        );
-
-        vector<string> channelItems;
-        channelItems.push_back("Stable");
-        channelItems.push_back("Bleeding-Edge");
-        channelItems.push_back("Back");
-
-        _channelMenu = new Menu(
-            string("Kosmos Updater Diagnostic ") + VERSION + " - Select a channel",
-            channelItems,
-            bind(&Application::_menuItemSelected, this, _1),
-            bind(&Application::_back, this)
-        );
-
-        _appVersionView = new AppVersionView(bind(&Application::_back, this));
-        _appView = new AppView(bind(&Application::_back, this));
-        _packageVersionView = new PackageVersionView(bind(&Application::_back, this));
-        _packageView = new PackageView(bind(&Application::_back, this));
+        _httpSyncAppVersionView = new AppVersionView(false, false, bind(&Application::_back, this));
+        _httpAsyncAppVersionView = new AppVersionView(false, true, bind(&Application::_back, this));
+        _httpsSyncAppVersionView = new AppVersionView(true, false, bind(&Application::_back, this));
+        _httpsAsyncAppVersionView = new AppVersionView(true, true, bind(&Application::_back, this));
 
         _state = 0;
     }
@@ -78,28 +54,20 @@ namespace KUDiag {
             delete _mainMenu;
         }
 
-        if (_bundleMenu != NULL) {
-            delete _bundleMenu;
+        if (_httpSyncAppVersionView != NULL) {
+            delete _httpSyncAppVersionView;
         }
 
-        if (_channelMenu != NULL) {
-            delete _channelMenu;
+        if (_httpAsyncAppVersionView != NULL) {
+            delete _httpAsyncAppVersionView;
         }
 
-        if (_appVersionView != NULL) {
-            delete _appVersionView;
+        if (_httpsSyncAppVersionView != NULL) {
+            delete _httpsSyncAppVersionView;
         }
 
-        if (_appView != NULL) {
-            delete _appView;
-        }
-
-        if (_packageVersionView != NULL) {
-            delete _packageVersionView;
-        }
-
-        if (_packageView != NULL) {
-            delete _packageView;
+        if (_httpsAsyncAppVersionView != NULL) {
+            delete _httpsAsyncAppVersionView;
         }
 
         curl_global_cleanup();
@@ -120,28 +88,19 @@ namespace KUDiag {
                     break;
 
                 case 1:
-                    _appVersionView->draw(kDown);
+                    _httpSyncAppVersionView->draw(kDown);
                     break;
 
                 case 2:
-                    _appView->draw(kDown);
+                    _httpAsyncAppVersionView->draw(kDown);
                     break;
 
                 case 3:
-                case 5:
-                    _channelMenu->draw(kDown);
+                    _httpsSyncAppVersionView->draw(kDown);
                     break;
 
                 case 4:
-                    _packageVersionView->draw(kDown);
-                    break;
-
-                case 6:
-                    _bundleMenu->draw(kDown);
-                    break;
-
-                case 7:
-                    _packageView->draw(kDown);
+                    _httpsAsyncAppVersionView->draw(kDown);
                     break;
 
                 default:
@@ -156,64 +115,19 @@ namespace KUDiag {
         switch (_state) {
             case 0:
                 if (itemSelected == 0) {
-                    _appVersionView->reset();
+                    _httpSyncAppVersionView->reset();
                     _state = 1;
                 } else if (itemSelected == 1) {
-                    _appView->reset();
+                    _httpAsyncAppVersionView->reset();
                     _state = 2;
                 } else if (itemSelected == 2) {
-                    _channelMenu->reset();
+                    _httpsSyncAppVersionView->reset();
                     _state = 3;
                 } else if (itemSelected == 3) {
-                    _channelMenu->reset();
-                    _state = 5;
+                    _httpsAsyncAppVersionView->reset();
+                    _state = 4;
                 } else {
                     _state = -1;
-                }
-                break;
-
-            case 3:
-                if (itemSelected == 0) {
-                    _packageVersionView->channel = 1;
-                    _packageVersionView->reset();
-                    _state = 4;
-                } else if (itemSelected == 1) {
-                    _packageVersionView->channel = 2;
-                    _packageVersionView->reset();
-                    _state = 4;
-                } else {
-                    _mainMenu->reset();
-                    _state = 0;
-                }
-                break;
-
-            case 5:
-                if (itemSelected == 0) {
-                    _packageView->channel = 1;
-                    _bundleMenu->reset();
-                    _state = 6;
-                } else if (itemSelected == 1) {
-                    _packageView->channel = 2;
-                    _bundleMenu->reset();
-                    _state = 6;
-                } else {
-                    _mainMenu->reset();
-                    _state = 0;
-                }
-                break;
-
-            case 6:
-                if (itemSelected == 0) {
-                    _packageView->bundle = 1;
-                    _packageView->reset();
-                    _state = 7;
-                } else if (itemSelected == 1) {
-                    _packageView->bundle = 2;
-                    _packageView->reset();
-                    _state = 7;
-                } else {
-                    _channelMenu->reset();
-                    _state = 5;
                 }
                 break;
         }
@@ -229,15 +143,8 @@ namespace KUDiag {
             case 2:
             case 3:
             case 4:
-            case 5:
-            case 7:
                 _mainMenu->reset();
                 _state = 0;
-                break;
-
-            case 6:
-                _channelMenu->reset();
-                _state = 5;
                 break;
         }
     }

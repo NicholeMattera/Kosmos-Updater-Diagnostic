@@ -28,9 +28,7 @@ namespace KUDiag {
         _method = method;
         _url = url;
 
-        _size = 0;
-        _data = (char *) malloc(1);
-
+        _threadCreated = false;
         mutexInit(&_mutex);
         _progress = 0;
         _completed = false;
@@ -39,12 +37,10 @@ namespace KUDiag {
     }
 
     WebRequest::~WebRequest() {
-        if (_data != NULL) {
-            free(_data);
+        if (_threadCreated) {
+            threadWaitForExit(&_thread);
+            threadClose(&_thread);
         }
-
-        threadWaitForExit(&_thread);
-        threadClose(&_thread);
     }
 
     string WebRequest::getMethod() {
@@ -68,14 +64,10 @@ namespace KUDiag {
     }
 
     size_t WebRequest::getSize() {
-        return _size;
+        return _data.size();
     }
 
     string WebRequest::getData() {
-        return string(_data);
-    }
-
-    char * WebRequest::getRawData() {
         return _data;
     }
 
@@ -88,7 +80,7 @@ namespace KUDiag {
 
         ofstream file;
         file.open(filename, ios::out | ios::binary);
-        file.write(_data, _size);
+        file.write(_data.c_str(), _data.size());
         file.flush();
         file.close();
 
@@ -103,11 +95,18 @@ namespace KUDiag {
         return _errorMessage;
     }
 
-    bool WebRequest::start() {
+    string WebRequest::startSync() {
+        WebRequest::_createRequest(this);
+        return _data;
+    }
+
+    bool WebRequest::startAsync() {
         Result res;
 
         if (R_FAILED( res = threadCreate(&_thread, _createRequest, (void *) this, 0x2000, 0x2B, -2)))
             return false;
+
+        _threadCreated = true;
 
         if (R_FAILED( res = threadStart(&_thread)))
             return false;
@@ -115,23 +114,10 @@ namespace KUDiag {
         return true;
     }
 
-    size_t WebRequest::appendData(void *contents, size_t size, size_t nmemb) {
-        size_t realsize = size * nmemb;
-        mutexLock(&_mutex);
-
-        _data = (char *) realloc(_data, _size + realsize + 1);
-        if (_data == NULL) {
-            setErrored("Not enough memory.");
-            return 0;
-        }
-
-        memcpy(&(_data[_size]), contents, realsize);
-        _size += realsize;
-        _data[_size] = 0;
-
-        mutexUnlock(&_mutex);
-
-        return realsize;
+    size_t WebRequest::appendData(const char* in, std::size_t size, std::size_t num) {
+        const size_t totalBytes(size * num);
+        _data.append(in, totalBytes);
+        return totalBytes;
     }
 
     int WebRequest::setProgress(curl_off_t dltotal, curl_off_t dlnow) {
@@ -177,6 +163,8 @@ namespace KUDiag {
 
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             curl_easy_setopt(curl, CURLOPT_URL, request->getURL().c_str());
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
             curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, request->getMethod().c_str());
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _writeFunction);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) request);
@@ -210,13 +198,11 @@ namespace KUDiag {
         request->setCompleted();
     }
 
-    size_t WebRequest::_writeFunction(void *contents, size_t size, size_t nmemb, void * ptr) {
-        WebRequest * request = (WebRequest *) ptr;
-        return request->appendData(contents, size, nmemb);
+    size_t WebRequest::_writeFunction(const char* in, std::size_t size, std::size_t num, WebRequest * request) {
+        return request->appendData(in, size, num);
     }
 
-    size_t WebRequest::_progressFunction(void *ptr, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
-        WebRequest * request = (WebRequest *) ptr;
+    size_t WebRequest::_progressFunction(WebRequest * request, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
         return request->setProgress(dltotal, dlnow);
     }
 }
