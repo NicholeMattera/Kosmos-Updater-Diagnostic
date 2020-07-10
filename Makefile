@@ -37,7 +37,7 @@ EXEFS_SRC	:=	exefs_src
 ICON		:=  Icon.jpg
 
 APP_TITLE			:= Kosmos Updater Diagnostic
-APP_AUTHOR			:= Steven Mattera
+APP_AUTHOR			:= Nichole Mattera
 APP_VERSION 		:= 1.0.0
 API_VERSION			:= v3
 
